@@ -56,14 +56,14 @@ def preprocess_image(image: Image.Image) -> np.ndarray:
     return np.expand_dims(img_array, axis=0)
 
 
-st.title("🍛 Indian Food Macro Tracker")
+st.title(" Indian Food Macro Tracker")
 st.write("Upload an image of your food and specify the serving size.")
 
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.image(image, caption="Uploaded Image", use_container_width=True)
 
     # 1. Preprocess & Run ONNX Inference
     input_tensor = preprocess_image(image)
