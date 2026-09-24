@@ -384,7 +384,7 @@ st.markdown(
     """
 <div style="margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div style="color: #94a3b8; font-size: 0.85rem;">
-        Built by <span style="font-weight: 600; color: #f4f4f5;">Jash Mewada</span> • AIML
+        Built by <span style="font-weight: 600; color: #f4f4f5;">Jash Mewada</span>
     </div>
     <div style="display: flex; gap: 1.5rem; align-items: center;">
         <a href="https://github.com/jashmewada12" target="_blank" class="footer-link">
@@ -393,7 +393,7 @@ st.markdown(
             </svg>
             GitHub
         </a>
-        <a href="hhttps://www.linkedin.com/in/jash-mewada-86aa252b6/" target="_blank" class="footer-link">
+        <a href="https://www.linkedin.com/in/jash-mewada-86aa252b6/" target="_blank" class="footer-link">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
                 <rect x="2" y="9" width="4" height="12"></rect>
