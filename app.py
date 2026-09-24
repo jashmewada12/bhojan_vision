@@ -6,20 +6,18 @@ import streamlit as st
 from PIL import Image
 
 # -----------------------------------------------------------------------------
-# 1. PAGE CONFIG & SHADCN-INSPIRED DESIGN SYSTEM (NO PURPLE / CLEAN ZINC THEME)
+# 1. PAGE CONFIG & SHADCN-INSPIRED DESIGN SYSTEM
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="BhojanVisionv1 — Precision Nutrition AI",
+    page_title="BhojanVision — Precision Nutrition AI",
     page_icon="🍽️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS implementing shadcn/ui minimal aesthetics
 st.markdown(
     """
 <style>
-    /* Vibrant Dark Teal-Emerald Layered Ambient Gradient */
     .stApp {
         background:
             radial-gradient(circle at 50% -15%, rgba(16, 185, 129, 0.28) 0%, transparent 50%),
@@ -31,7 +29,6 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* Responsive Top Header Bar */
     .header-container {
         display: flex;
         flex-wrap: wrap;
@@ -64,7 +61,6 @@ st.markdown(
         align-self: center;
     }
 
-    /* Translucent Card with Frosted Depth */
     .card {
         background: rgba(13, 23, 28, 0.68);
         backdrop-filter: blur(14px);
@@ -84,7 +80,6 @@ st.markdown(
         margin-bottom: 0.75rem;
     }
 
-    /* Metric Indicators */
     .metric-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -111,7 +106,6 @@ st.markdown(
         color: #10b981;
     }
 
-    /* File uploader & Camera Overrides */
     div[data-testid="stFileUploader"] section {
         background-color: rgba(15, 28, 34, 0.5);
         border: 1px dashed rgba(255, 255, 255, 0.18);
@@ -121,7 +115,6 @@ st.markdown(
         border-color: #10b981;
     }
 
-    /* Button Styling */
     .stButton>button {
         background-color: #f1f5f9;
         color: #091316;
@@ -136,7 +129,6 @@ st.markdown(
         color: #000;
     }
 
-    /* Mobile Layout Refinements */
     @media (max-width: 640px) {
         .header-container {
             flex-direction: column;
@@ -181,16 +173,19 @@ CLASS_NAMES = [
 
 @st.cache_resource
 def load_onnx_model():
-    session = ort.InferenceSession(
+    return ort.InferenceSession(
         "models/bhojan_vision.onnx", providers=["CPUExecutionProvider"]
     )
+
+
+def load_nutrition_database():
     with open("database.json", "r") as f:
-        nutrition_db = json.load(f)
-    return session, nutrition_db
+        return json.load(f)
 
 
 try:
-    session, NUTRITION_DB = load_onnx_model()
+    session = load_onnx_model()
+    NUTRITION_DB = load_nutrition_database()
     model_ready = True
 except Exception as e:
     model_ready = False
@@ -239,7 +234,6 @@ with col_left:
         '<div class="card-title">Image Acquisition</div>', unsafe_allow_html=True
     )
 
-    # Clean input selector
     input_method = st.radio(
         label="Input Source",
         options=["Upload File", "Take Photo"],
@@ -276,13 +270,11 @@ with col_right:
     )
 
     if raw_image is not None:
-        # Run Inference
         with st.spinner("Classifying image tensor..."):
             input_tensor = preprocess(raw_image)
             input_name = session.get_inputs()[0].name
             logits = session.run(None, {input_name: input_tensor})[0][0]
 
-            # Softmax calculation for confidence
             exp_logits = np.exp(logits - np.max(logits))
             probs = exp_logits / np.sum(exp_logits)
 
@@ -312,19 +304,20 @@ with col_right:
                 unsafe_allow_html=True,
             )
 
-            # Initialize macro variables
             total_cals = 0.0
             total_protein = 0.0
             total_carbs = 0.0
             total_fat = 0.0
             display_title = ""
 
-            food_type = food_info.get("type", "standard")
+            is_compound = (
+                food_info.get("type") == "compound" or "components" in food_info
+            )
 
-            if food_type == "compound":
+            if is_compound:
                 st.markdown('<div class="card">', unsafe_allow_html=True)
                 st.markdown(
-                    '<div class="card-title">Adjust Plate Components</div>',
+                    '<div class="card-title">Adjust Serving Components</div>',
                     unsafe_allow_html=True,
                 )
 
@@ -333,24 +326,26 @@ with col_right:
 
                 for idx, (comp_name, comp_data) in enumerate(components.items()):
                     with cols[idx]:
-                        unit = comp_data["unit"]
+                        comp_unit = comp_data["unit"]
                         base_qty = comp_data["base_qty"]
 
                         qty = st.number_input(
-                            label=f"{comp_name.replace('_', ' ').title()} ({unit})",
+                            label=f"{comp_name.replace('_', ' ').title()} ({comp_unit})",
                             min_value=0.0,
                             value=float(base_qty),
-                            step=1.0 if unit in ["pieces", "plate", "slice"] else 25.0,
+                            step=1.0
+                            if comp_unit in ["pieces", "plate", "slice"]
+                            else 25.0,
                             key=f"input_{pred_class}_{comp_name}",
                         )
 
-                        scale = qty / base_qty if base_qty > 0 else 0
+                        scale = (qty / base_qty) if base_qty > 0 else 0.0
                         total_cals += comp_data["calories"] * scale
                         total_protein += comp_data["protein"] * scale
                         total_carbs += comp_data["carbs"] * scale
                         total_fat += comp_data["fat"] * scale
 
-                display_title = "Custom Plate Breakdown"
+                display_title = "Custom Serving Total"
                 st.markdown("</div>", unsafe_allow_html=True)
 
             else:
@@ -373,7 +368,7 @@ with col_right:
                 )
                 st.markdown("</div>", unsafe_allow_html=True)
 
-                scale = qty / base_qty if base_qty > 0 else 0
+                scale = (qty / base_qty) if base_qty > 0 else 0.0
                 total_cals = food_info["calories"] * scale
                 total_protein = food_info["protein"] * scale
                 total_carbs = food_info["carbs"] * scale
@@ -448,7 +443,6 @@ st.markdown(
 </div>
 
 <style>
-    /* Footer link hover animations */
     .footer-link {
         color: #94a3b8;
         text-decoration: none;
