@@ -5,10 +5,129 @@ import onnxruntime as ort
 import streamlit as st
 from PIL import Image
 
+# -----------------------------------------------------------------------------
+# 1. PAGE CONFIG & SHADCN-INSPIRED DESIGN SYSTEM (NO PURPLE / CLEAN ZINC THEME)
+# -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Indian Food Macro Tracker", page_icon="🍛", layout="centered"
+    page_title="BhojanVision — Precision Nutrition AI",
+    page_icon="🍽️",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
+# Custom CSS implementing shadcn/ui minimal aesthetics
+st.markdown(
+    """
+<style>
+    /* Global Background and Typography */
+    .stApp {
+        background-color: #09090b;
+        color: #f4f4f5;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Top Header Bar */
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid #27272a;
+        margin-bottom: 2rem;
+    }
+    .header-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: #fafafa;
+        margin: 0;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.65rem;
+        border-radius: 9999px;
+        background-color: #064e3b;
+        color: #34d399;
+        border: 1px solid #059669;
+    }
+
+    /* Minimal shadcn-style Card Container */
+    .card {
+        background-color: #121215;
+        border: 1px solid #27272a;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    .card-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #a1a1aa;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Metric Indicators */
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    .metric-box {
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 0.5rem;
+        padding: 0.85rem;
+    }
+    .metric-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #71717a;
+    }
+    .metric-val {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #fafafa;
+        margin-top: 0.15rem;
+    }
+    .metric-val.emerald {
+        color: #10b981;
+    }
+
+    /* File uploader & Camera Overrides */
+    div[data-testid="stFileUploader"] section {
+        background-color: #18181b;
+        border: 1px dashed #3f3f46;
+        border-radius: 0.75rem;
+    }
+    div[data-testid="stFileUploader"] section:hover {
+        border-color: #10b981;
+    }
+
+    /* Button Styling */
+    .stButton>button {
+        background-color: #fafafa;
+        color: #09090b;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        border: none;
+        padding: 0.5rem 1rem;
+        transition: all 0.15s ease;
+    }
+    .stButton>button:hover {
+        background-color: #e4e4e7;
+        color: #000;
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+# -----------------------------------------------------------------------------
+# 2. MODEL ASSETS & CLASS MAPPING
+# -----------------------------------------------------------------------------
 CLASS_NAMES = [
     "burger",
     "butter_naan",
@@ -34,7 +153,7 @@ CLASS_NAMES = [
 
 
 @st.cache_resource
-def load_assets():
+def load_onnx_model():
     session = ort.InferenceSession(
         "models/bhojan_vision.onnx", providers=["CPUExecutionProvider"]
     )
@@ -43,10 +162,18 @@ def load_assets():
     return session, nutrition_db
 
 
-session, nutrition_db = load_assets()
+try:
+    session, NUTRITION_DB = load_onnx_model()
+    model_ready = True
+except Exception as e:
+    model_ready = False
+    model_error = str(e)
 
 
-def preprocess_image(image: Image.Image) -> np.ndarray:
+# -----------------------------------------------------------------------------
+# 3. PREPROCESSING FUNCTION
+# -----------------------------------------------------------------------------
+def preprocess(image: Image.Image) -> np.ndarray:
     image = image.convert("RGB").resize((288, 288))
     img_array = np.array(image, dtype=np.float32) / 255.0
     mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
@@ -56,50 +183,170 @@ def preprocess_image(image: Image.Image) -> np.ndarray:
     return np.expand_dims(img_array, axis=0)
 
 
-st.title(" Indian Food Macro Tracker")
-st.write("Upload an image of your food and specify the serving size.")
+# -----------------------------------------------------------------------------
+# 4. USER INTERFACE LAYOUT
+# -----------------------------------------------------------------------------
+st.markdown(
+    """
+<div class="header-container">
+    <div>
+        <h1 class="header-title">BhojanVision</h1>
+        <p style="color: #71717a; margin: 0.15rem 0 0 0; font-size: 0.875rem;">
+            Real-time inference & nutritional analytics for Indian cuisine
+        </p>
+    </div>
+    <div class="status-badge">● ONNX Runtime Active</div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+if not model_ready:
+    st.error(f"Failed to load ONNX model. Check file path: {model_error}")
+    st.stop()
 
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_container_width=True)
+col_left, col_right = st.columns([1.1, 1], gap="large")
 
-    # 1. Preprocess & Run ONNX Inference
-    input_tensor = preprocess_image(image)
-    input_name = session.get_inputs()[0].name
-    outputs = session.run(None, {input_name: input_tensor})
-
-    predicted_idx = int(np.argmax(outputs[0]))
-    predicted_food = CLASS_NAMES[predicted_idx]
-    food_data = nutrition_db[predicted_food]
-
-    st.success(f"**Detected Item:** {predicted_food.replace('_', ' ').title()}")
-
-    # 2. Dynamic Input Locked to Required Unit
-    st.subheader("Portion Size")
-    unit = food_data["unit"]
-    base_qty = food_data["base_qty"]
-
-    amount = st.number_input(
-        f"Enter amount in {unit}:",
-        min_value=0.1,
-        value=float(base_qty),
-        step=1.0 if unit == "pieces" else 10.0,
+with col_left:
+    st.markdown(
+        '<div class="card-title">Image Acquisition</div>', unsafe_allow_html=True
     )
 
-    # 3. Calculate and Render Macros
-    multiplier = amount / base_qty
-    cals = round(food_data["calories"] * multiplier, 1)
-    protein = round(food_data["protein"] * multiplier, 1)
-    carbs = round(food_data["carbs"] * multiplier, 1)
-    fat = round(food_data["fat"] * multiplier, 1)
+    # Clean input selector
+    input_method = st.radio(
+        label="Input Source",
+        options=["Upload File", "Take Photo"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
 
-    st.markdown("---")
-    st.subheader("Nutritional Breakdown")
+    raw_image = None
+    if input_method == "Upload File":
+        uploaded = st.file_uploader(
+            "Select an image",
+            type=["jpg", "jpeg", "png", "webp"],
+            label_visibility="collapsed",
+        )
+        if uploaded:
+            raw_image = Image.open(uploaded)
+    else:
+        captured = st.camera_input("Capture item", label_visibility="collapsed")
+        if captured:
+            raw_image = Image.open(captured)
 
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Calories", f"{cals} kcal")
-    col2.metric("Protein", f"{protein} g")
-    col3.metric("Carbs", f"{carbs} g")
-    col4.metric("Fat", f"{fat} g")
+    if raw_image:
+        st.markdown(
+            '<div class="card" style="padding: 0.5rem; margin-top: 1rem;">',
+            unsafe_allow_html=True,
+        )
+        st.image(raw_image, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+with col_right:
+    st.markdown(
+        '<div class="card-title">Prediction & Nutrition Engine</div>',
+        unsafe_allow_html=True,
+    )
+
+    if raw_image is not None:
+        # Run Inference
+        with st.spinner("Classifying image tensor..."):
+            input_tensor = preprocess(raw_image)
+            input_name = session.get_inputs()[0].name
+            logits = session.run(None, {input_name: input_tensor})[0][0]
+
+            # Softmax calculation for confidence
+            exp_logits = np.exp(logits - np.max(logits))
+            probs = exp_logits / np.sum(exp_logits)
+
+            pred_idx = int(np.argmax(probs))
+            confidence = float(probs[pred_idx]) * 100
+            pred_class = CLASS_NAMES[pred_idx]
+            food_info = NUTRITION_DB.get(pred_class, None)
+
+        if food_info:
+            unit = food_info["unit"]
+            base_qty = food_info["base_qty"]
+
+            # Prediction Overview Card
+            st.markdown(
+                f"""
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <span style="font-size: 1.4rem; font-weight: 700; color: #fafafa;">
+                        {pred_class.replace("_", " ").title()}
+                    </span>
+                    <span style="color: #10b981; font-weight: 600; font-size: 0.875rem;">
+                        {confidence:.1f}% confidence
+                    </span>
+                </div>
+                <div style="margin-top: 0.5rem; height: 4px; background: #27272a; border-radius: 2px;">
+                    <div style="height: 100%; width: {min(confidence, 100):.1f}%; background: #10b981; border-radius: 2px;"></div>
+                </div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
+            # Interactive Quantity Stepper
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="card-title">Serving Size ({unit})</div>',
+                unsafe_allow_html=True,
+            )
+
+            qty = st.number_input(
+                label=f"Enter quantity in {unit}",
+                min_value=0.1,
+                value=float(base_qty),
+                step=1.0 if unit in ["pieces", "plate", "slice"] else 25.0,
+                label_visibility="collapsed",
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # Mathematical Scaling
+            scale = qty / base_qty
+            cals = round(food_info["calories"] * scale, 1)
+            protein = round(food_info["protein"] * scale, 1)
+            carbs = round(food_info["carbs"] * scale, 1)
+            fat = round(food_info["fat"] * scale, 1)
+
+            # Nutritional Breakdown Metric Grid
+            st.markdown(
+                f"""
+            <div class="card">
+                <div class="card-title">Nutritional Breakdown for {qty:g} {unit}</div>
+                <div class="metric-grid">
+                    <div class="metric-box">
+                        <div class="metric-label">Energy</div>
+                        <div class="metric-val emerald">{cals} <span style="font-size: 0.8rem; color: #71717a;">kcal</span></div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Protein</div>
+                        <div class="metric-val">{protein} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Carbohydrates</div>
+                        <div class="metric-val">{carbs} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Total Fats</div>
+                        <div class="metric-val">{fat} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
+                    </div>
+                </div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
+    else:
+        st.markdown(
+            """
+        <div class="card" style="text-align: center; padding: 3rem 1rem;">
+            <p style="color: #71717a; margin: 0; font-size: 0.9rem;">
+                Awaiting input image.<br>Use the left panel to upload a file or take a photo.
+            </p>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
