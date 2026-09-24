@@ -9,7 +9,7 @@ from PIL import Image
 # 1. PAGE CONFIG & SHADCN-INSPIRED DESIGN SYSTEM (NO PURPLE / CLEAN ZINC THEME)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="BhojanVision — Precision Nutrition AI",
+    page_title="BhojanVisionv1 — Precision Nutrition AI",
     page_icon="🍽️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -292,9 +292,6 @@ with col_right:
             food_info = NUTRITION_DB.get(pred_class, None)
 
         if food_info:
-            unit = food_info["unit"]
-            base_qty = food_info["base_qty"]
-
             # Prediction Overview Card
             st.markdown(
                 f"""
@@ -315,50 +312,95 @@ with col_right:
                 unsafe_allow_html=True,
             )
 
-            # Interactive Quantity Stepper
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown(
-                f'<div class="card-title">Serving Size ({unit})</div>',
-                unsafe_allow_html=True,
-            )
+            # Initialize macro variables
+            total_cals = 0.0
+            total_protein = 0.0
+            total_carbs = 0.0
+            total_fat = 0.0
+            display_title = ""
 
-            qty = st.number_input(
-                label=f"Enter quantity in {unit}",
-                min_value=0.1,
-                value=float(base_qty),
-                step=1.0 if unit in ["pieces", "plate", "slice"] else 25.0,
-                label_visibility="collapsed",
-            )
-            st.markdown("</div>", unsafe_allow_html=True)
+            food_type = food_info.get("type", "standard")
 
-            # Mathematical Scaling
-            scale = qty / base_qty
-            cals = round(food_info["calories"] * scale, 1)
-            protein = round(food_info["protein"] * scale, 1)
-            carbs = round(food_info["carbs"] * scale, 1)
-            fat = round(food_info["fat"] * scale, 1)
+            if food_type == "compound":
+                st.markdown('<div class="card">', unsafe_allow_html=True)
+                st.markdown(
+                    '<div class="card-title">Adjust Plate Components</div>',
+                    unsafe_allow_html=True,
+                )
+
+                components = food_info["components"]
+                cols = st.columns(len(components))
+
+                for idx, (comp_name, comp_data) in enumerate(components.items()):
+                    with cols[idx]:
+                        unit = comp_data["unit"]
+                        base_qty = comp_data["base_qty"]
+
+                        qty = st.number_input(
+                            label=f"{comp_name.replace('_', ' ').title()} ({unit})",
+                            min_value=0.0,
+                            value=float(base_qty),
+                            step=1.0 if unit in ["pieces", "plate", "slice"] else 25.0,
+                            key=f"input_{pred_class}_{comp_name}",
+                        )
+
+                        scale = qty / base_qty if base_qty > 0 else 0
+                        total_cals += comp_data["calories"] * scale
+                        total_protein += comp_data["protein"] * scale
+                        total_carbs += comp_data["carbs"] * scale
+                        total_fat += comp_data["fat"] * scale
+
+                display_title = "Custom Plate Breakdown"
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            else:
+                unit = food_info["unit"]
+                base_qty = food_info["base_qty"]
+
+                st.markdown('<div class="card">', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="card-title">Serving Size ({unit})</div>',
+                    unsafe_allow_html=True,
+                )
+
+                qty = st.number_input(
+                    label=f"Enter quantity in {unit}",
+                    min_value=0.1,
+                    value=float(base_qty),
+                    step=1.0 if unit in ["pieces", "plate", "slice"] else 25.0,
+                    label_visibility="collapsed",
+                    key=f"input_{pred_class}_standard",
+                )
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                scale = qty / base_qty if base_qty > 0 else 0
+                total_cals = food_info["calories"] * scale
+                total_protein = food_info["protein"] * scale
+                total_carbs = food_info["carbs"] * scale
+                total_fat = food_info["fat"] * scale
+                display_title = f"Nutritional Breakdown for {qty:g} {unit}"
 
             # Nutritional Breakdown Metric Grid
             st.markdown(
                 f"""
             <div class="card">
-                <div class="card-title">Nutritional Breakdown for {qty:g} {unit}</div>
+                <div class="card-title">{display_title}</div>
                 <div class="metric-grid">
                     <div class="metric-box">
                         <div class="metric-label">Energy</div>
-                        <div class="metric-val emerald">{cals} <span style="font-size: 0.8rem; color: #71717a;">kcal</span></div>
+                        <div class="metric-val emerald">{round(total_cals, 1)} <span style="font-size: 0.8rem; color: #71717a;">kcal</span></div>
                     </div>
                     <div class="metric-box">
                         <div class="metric-label">Protein</div>
-                        <div class="metric-val">{protein} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
+                        <div class="metric-val">{round(total_protein, 1)} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
                     </div>
                     <div class="metric-box">
                         <div class="metric-label">Carbohydrates</div>
-                        <div class="metric-val">{carbs} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
+                        <div class="metric-val">{round(total_carbs, 1)} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
                     </div>
                     <div class="metric-box">
                         <div class="metric-label">Total Fats</div>
-                        <div class="metric-val">{fat} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
+                        <div class="metric-val">{round(total_fat, 1)} <span style="font-size: 0.8rem; color: #71717a;">g</span></div>
                     </div>
                 </div>
             </div>
@@ -377,6 +419,7 @@ with col_right:
         """,
             unsafe_allow_html=True,
         )
+
 # -----------------------------------------------------------------------------
 # 5. FOOTER & PORTFOLIO LINKS
 # -----------------------------------------------------------------------------
