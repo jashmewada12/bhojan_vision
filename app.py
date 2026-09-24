@@ -19,9 +19,13 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-    /* Global Background and Typography */
+    /* Layered Midnight Slate Ambient Gradient */
     .stApp {
-        background-color: #09090b;
+        background:
+            radial-gradient(circle at 50% -10%, rgba(16, 185, 129, 0.12) 0%, transparent 55%),
+            radial-gradient(circle at 100% 100%, rgba(30, 41, 59, 0.35) 0%, transparent 50%),
+            linear-gradient(165deg, #0d131a 0%, #0a0f14 40%, #06080b 100%);
+        background-attachment: fixed;
         color: #f4f4f5;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
@@ -32,7 +36,7 @@ st.markdown(
         justify-content: space-between;
         align-items: center;
         padding-bottom: 1.25rem;
-        border-bottom: 1px solid #27272a;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         margin-bottom: 2rem;
     }
     .header-title {
@@ -47,25 +51,29 @@ st.markdown(
         font-weight: 500;
         padding: 0.25rem 0.65rem;
         border-radius: 9999px;
-        background-color: #064e3b;
+        background-color: rgba(6, 78, 59, 0.6);
         color: #34d399;
-        border: 1px solid #059669;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        backdrop-filter: blur(8px);
     }
 
-    /* Minimal shadcn-style Card Container */
+    /* Translucent Card with Frosted Depth */
     .card {
-        background-color: #121215;
-        border: 1px solid #27272a;
+        background: rgba(17, 24, 32, 0.65);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
         border-radius: 0.75rem;
         padding: 1.25rem;
         margin-bottom: 1rem;
     }
     .card-title {
-        font-size: 0.875rem;
+        font-size: 0.85rem;
         font-weight: 600;
-        color: #a1a1aa;
+        color: #94a3b8;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.06em;
         margin-bottom: 0.75rem;
     }
 
@@ -76,15 +84,15 @@ st.markdown(
         gap: 0.75rem;
     }
     .metric-box {
-        background: #18181b;
-        border: 1px solid #27272a;
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 0.5rem;
         padding: 0.85rem;
     }
     .metric-label {
         font-size: 0.75rem;
         font-weight: 500;
-        color: #71717a;
+        color: #64748b;
     }
     .metric-val {
         font-size: 1.35rem;
@@ -98,8 +106,8 @@ st.markdown(
 
     /* File uploader & Camera Overrides */
     div[data-testid="stFileUploader"] section {
-        background-color: #18181b;
-        border: 1px dashed #3f3f46;
+        background-color: rgba(15, 23, 42, 0.5);
+        border: 1px dashed rgba(255, 255, 255, 0.15);
         border-radius: 0.75rem;
     }
     div[data-testid="stFileUploader"] section:hover {
@@ -108,8 +116,8 @@ st.markdown(
 
     /* Button Styling */
     .stButton>button {
-        background-color: #fafafa;
-        color: #09090b;
+        background-color: #f1f5f9;
+        color: #0f172a;
         border-radius: 0.5rem;
         font-weight: 600;
         border: none;
@@ -117,7 +125,7 @@ st.markdown(
         transition: all 0.15s ease;
     }
     .stButton>button:hover {
-        background-color: #e4e4e7;
+        background-color: #e2e8f0;
         color: #000;
     }
 </style>
