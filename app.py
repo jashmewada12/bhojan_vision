@@ -19,51 +19,58 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-    /* Layered Midnight Slate Ambient Gradient */
+    /* Vibrant Dark Teal-Emerald Layered Ambient Gradient */
     .stApp {
         background:
-            radial-gradient(circle at 50% -10%, rgba(16, 185, 129, 0.12) 0%, transparent 55%),
-            radial-gradient(circle at 100% 100%, rgba(30, 41, 59, 0.35) 0%, transparent 50%),
-            linear-gradient(165deg, #0d131a 0%, #0a0f14 40%, #06080b 100%);
+            radial-gradient(circle at 50% -15%, rgba(16, 185, 129, 0.28) 0%, transparent 50%),
+            radial-gradient(circle at 90% 10%, rgba(20, 184, 166, 0.18) 0%, transparent 40%),
+            radial-gradient(circle at 10% 85%, rgba(13, 148, 136, 0.22) 0%, transparent 45%),
+            linear-gradient(165deg, #091a1a 0%, #061317 40%, #03080b 100%);
         background-attachment: fixed;
         color: #f4f4f5;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* Top Header Bar */
+    /* Responsive Top Header Bar */
     .header-container {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
+        gap: 0.75rem;
         padding-bottom: 1.25rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        margin-bottom: 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 1.75rem;
     }
     .header-title {
-        font-size: 1.5rem;
+        font-size: clamp(1.25rem, 5vw, 1.75rem);
         font-weight: 700;
         letter-spacing: -0.025em;
         color: #fafafa;
         margin: 0;
+        white-space: nowrap;
+        word-break: keep-all;
     }
     .status-badge {
-        font-size: 0.75rem;
+        font-size: 0.725rem;
         font-weight: 500;
         padding: 0.25rem 0.65rem;
         border-radius: 9999px;
-        background-color: rgba(6, 78, 59, 0.6);
+        background-color: rgba(6, 78, 59, 0.7);
         color: #34d399;
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        border: 1px solid rgba(16, 185, 129, 0.4);
         backdrop-filter: blur(8px);
+        white-space: nowrap;
+        align-self: center;
     }
 
     /* Translucent Card with Frosted Depth */
     .card {
-        background: rgba(17, 24, 32, 0.65);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+        background: rgba(13, 23, 28, 0.68);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
         border-radius: 0.75rem;
         padding: 1.25rem;
         margin-bottom: 1rem;
@@ -84,15 +91,15 @@ st.markdown(
         gap: 0.75rem;
     }
     .metric-box {
-        background: rgba(15, 23, 42, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(15, 28, 34, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 0.5rem;
         padding: 0.85rem;
     }
     .metric-label {
         font-size: 0.75rem;
         font-weight: 500;
-        color: #64748b;
+        color: #94a3b8;
     }
     .metric-val {
         font-size: 1.35rem;
@@ -106,8 +113,8 @@ st.markdown(
 
     /* File uploader & Camera Overrides */
     div[data-testid="stFileUploader"] section {
-        background-color: rgba(15, 23, 42, 0.5);
-        border: 1px dashed rgba(255, 255, 255, 0.15);
+        background-color: rgba(15, 28, 34, 0.5);
+        border: 1px dashed rgba(255, 255, 255, 0.18);
         border-radius: 0.75rem;
     }
     div[data-testid="stFileUploader"] section:hover {
@@ -117,7 +124,7 @@ st.markdown(
     /* Button Styling */
     .stButton>button {
         background-color: #f1f5f9;
-        color: #0f172a;
+        color: #091316;
         border-radius: 0.5rem;
         font-weight: 600;
         border: none;
@@ -127,6 +134,18 @@ st.markdown(
     .stButton>button:hover {
         background-color: #e2e8f0;
         color: #000;
+    }
+
+    /* Mobile Layout Refinements */
+    @media (max-width: 640px) {
+        .header-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .header-title {
+            font-size: 1.35rem;
+        }
     }
 </style>
 """,
